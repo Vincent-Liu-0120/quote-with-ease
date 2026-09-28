@@ -1,6 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-function QuoteForm({ onQuoteCreated }) {
+function QuoteForm({
+  editingQuote,
+  onQuoteCreated,
+  onQuoteUpdated,
+  onCancelEdit,
+}) {
   const [form, setForm] = useState({
     text: '',
     author: '',
@@ -11,6 +16,19 @@ function QuoteForm({ onQuoteCreated }) {
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+
+  useEffect(() => {
+    // When editingQuote changes, copy its data into the form.
+    if (editingQuote) {
+      setForm({
+        text: editingQuote.text,
+        author: editingQuote.author,
+        book: editingQuote.book || '',
+        page: editingQuote.page || '',
+        tags: editingQuote.tags?.join(', ') || '',
+      })
+    }
+  }, [editingQuote])
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -27,31 +45,63 @@ function QuoteForm({ onQuoteCreated }) {
     setSaving(true)
     setError(null)
 
-    try {
-      const response = await fetch('http://localhost:3000/api/quotes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: form.text,
-          author: form.author,
-          book: form.book,
-          page: form.page ? Number(form.page) : undefined,
-          tags: form.tags
-            .split(',')
-            .map((tag) => tag.trim())
-            .filter(Boolean),
-        }),
-      })
+    const quoteData = {
+      text: form.text,
+      author: form.author,
+      book: form.book,
+      page: form.page ? Number(form.page) : undefined,
+      tags: form.tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    }
 
-      if (!response.ok) {
-        throw new Error('Failed to create quote')
+    try {
+      let response
+
+      if (editingQuote) {
+        // Editing an existing quote.
+        response = await fetch(
+          `http://localhost:3000/api/quotes/${editingQuote._id}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(quoteData),
+          }
+        )
+      } else {
+        // Creating a completely new quote.
+        response = await fetch(
+          'http://localhost:3000/api/quotes',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(quoteData),
+          }
+        )
       }
 
-      const newQuote = await response.json()
+      if (!response.ok) {
+        throw new Error(
+          editingQuote
+            ? 'Failed to update quote'
+            : 'Failed to create quote'
+        )
+      }
 
-      onQuoteCreated(newQuote)
+      const savedQuote = await response.json()
+
+      if (editingQuote) {
+        // Send the updated quote back to App.
+        onQuoteUpdated(savedQuote)
+      } else {
+        // Send the newly created quote back to App.
+        onQuoteCreated(savedQuote)
+      }
 
       setForm({
         text: '',
@@ -73,7 +123,7 @@ function QuoteForm({ onQuoteCreated }) {
       className="mb-12 rounded-xl bg-white p-6 shadow-sm"
     >
       <h2 className="mb-6 text-2xl font-serif font-bold">
-        Add a Quote
+        {editingQuote ? 'Edit Quote' : 'Add a Quote'}
       </h2>
 
       <div className="space-y-4">
@@ -127,13 +177,29 @@ function QuoteForm({ onQuoteCreated }) {
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-lg bg-stone-900 px-5 py-3 text-white hover:bg-stone-700 disabled:opacity-50"
-        >
-          {saving ? 'Saving...' : 'Save Quote'}
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-lg bg-stone-900 px-5 py-3 text-white hover:bg-stone-700 disabled:opacity-50"
+          >
+            {saving
+              ? 'Saving...'
+              : editingQuote
+                ? 'Save Changes'
+                : 'Save Quote'}
+          </button>
+
+          {editingQuote && (
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              className="rounded-lg border border-stone-300 px-5 py-3 hover:bg-stone-100"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
     </form>
   )
