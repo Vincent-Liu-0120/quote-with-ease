@@ -8,6 +8,7 @@ import QuoteList from './components/QuoteList'
 import QuoteForm from './components/QuoteForm'
 import Navbar from './components/Navbar'
 import SearchBar from './components/SearchBar'
+import TagFilter from './components/TagFilter'
 
 function App() {
 
@@ -16,16 +17,7 @@ function App() {
   const [error, setError] = useState(null)
   const [editingQuote, setEditingQuote] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
-
-  const filteredQuotes = quotes.filter((quote) => {
-    const search = searchTerm.toLowerCase()
-
-    return (
-      quote.text.toLowerCase().includes(search) ||
-      quote.author.toLowerCase().includes(search) ||
-      quote.book?.toLowerCase().includes(search)
-    )
-  })
+  const [selectedTag, setSelectedTag] = useState(null)
 
   function handleQuoteCreated(newQuote) {
     // Add the newly created quote to the beginning of the current quote list.
@@ -74,6 +66,29 @@ function App() {
     // Exit edit mode.
     setEditingQuote(null)
   }
+  const availableTags = [
+    ...new Set(
+      quotes.flatMap((quote) => quote.tags || [])
+    ),
+  ].sort()
+
+  const filteredQuotes = quotes.filter((quote) => {
+    const search = searchTerm.toLowerCase()
+
+    const matchesSearch =
+      quote.text.toLowerCase().includes(search) ||
+      quote.author.toLowerCase().includes(search) ||
+      quote.book?.toLowerCase().includes(search) ||
+      quote.tags?.some((tag) =>
+        tag.toLowerCase().includes(search)
+      )
+
+    const matchesTag =
+      selectedTag === null ||
+      quote.tags?.includes(selectedTag)
+
+    return matchesSearch && matchesTag
+  })
 
   useEffect(() => {
     async function fetchQuotes() {
@@ -105,6 +120,12 @@ function App() {
           onChange={setSearchTerm}
         />
 
+        <TagFilter
+          tags={availableTags}
+          selectedTag={selectedTag}
+          onSelectTag={setSelectedTag}
+        />
+
         <QuoteForm
           editingQuote={editingQuote}
           onQuoteCreated={handleQuoteCreated}
@@ -119,6 +140,11 @@ function App() {
             {error}
           </p>
         )}
+
+        <p className="mb-4 text-sm text-stone-500">
+          {filteredQuotes.length}{' '}
+          {filteredQuotes.length === 1 ? 'quote' : 'quotes'}
+        </p>
 
         {!loading && !error && (
           <QuoteList

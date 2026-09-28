@@ -1,9 +1,9 @@
+import { useEffect, useState } from 'react'
 import {
   createQuote,
   updateQuote,
 } from '../api/quotes'
 import TagInput from './TagInput'
-import { useEffect, useState } from 'react'
 
 
 function QuoteForm({
@@ -43,11 +43,11 @@ function QuoteForm({
     }, [editingQuote])
 
     function handleChange(event) {
-        const { name, value } = event.target.value
+        const { name, value } = event.target
 
         setForm((current) => ({
-        ...current,
-        [name]: value,
+            ...current,
+            [name]: value,
         }))
     }
 
