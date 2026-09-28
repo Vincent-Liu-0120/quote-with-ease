@@ -1,3 +1,7 @@
+import {
+  createQuote,
+  updateQuote,
+} from '../api/quotes'
 import { useEffect, useState } from 'react'
 
 function QuoteForm({
@@ -57,63 +61,36 @@ function QuoteForm({
     }
 
     try {
-      let response
+        let savedQuote
 
-      if (editingQuote) {
-        // Editing an existing quote.
-        response = await fetch(
-          `http://localhost:3000/api/quotes/${editingQuote._id}`,
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(quoteData),
-          }
-        )
-      } else {
-        // Creating a completely new quote.
-        response = await fetch(
-          'http://localhost:3000/api/quotes',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(quoteData),
-          }
-        )
-      }
+        if (editingQuote) {
+            // Update an existing quote.
+            savedQuote = await updateQuote(
+            editingQuote._id,
+            quoteData
+            )
+        } else {
+            // Create a new quote.
+            savedQuote = await createQuote(quoteData)
+        }
 
-      if (!response.ok) {
-        throw new Error(
-          editingQuote
-            ? 'Failed to update quote'
-            : 'Failed to create quote'
-        )
-      }
+        if (editingQuote) {
+            onQuoteUpdated(savedQuote)
+        } else {
+            onQuoteCreated(savedQuote)
+        }
 
-      const savedQuote = await response.json()
-
-      if (editingQuote) {
-        // Send the updated quote back to App.
-        onQuoteUpdated(savedQuote)
-      } else {
-        // Send the newly created quote back to App.
-        onQuoteCreated(savedQuote)
-      }
-
-      setForm({
-        text: '',
-        author: '',
-        book: '',
-        page: '',
-        tags: '',
-      })
-    } catch (error) {
-      setError(error.message)
-    } finally {
-      setSaving(false)
+        setForm({
+            text: '',
+            author: '',
+            book: '',
+            page: '',
+            tags: '',
+        })
+        } catch (error) {
+        setError(error.message)
+        } finally {
+        setSaving(false)
     }
   }
 

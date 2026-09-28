@@ -1,3 +1,7 @@
+import {
+  getQuotes,
+  deleteQuote,
+} from './api/quotes'
 import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import QuoteList from './components/QuoteList'
@@ -20,20 +24,10 @@ function App() {
 
   async function handleDeleteQuote(id) {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/quotes/${id}`,
-        {
-          method: 'DELETE',
-        }
-      )
+      // The API layer handles DELETE /api/quotes/:id.
+      await deleteQuote(id)
 
-      if (!response.ok) {
-        throw new Error('Failed to delete quote')
-      }
-
-      // Remove the deleted quote from React's local state.
-      // `filter()` creates a new array containing every quote
-      // except the one whose `_id` matches the deleted ID.
+      // Remove the deleted quote from React state.
       setQuotes((current) =>
         current.filter((quote) => quote._id !== id)
       )
@@ -71,13 +65,9 @@ function App() {
   useEffect(() => {
     async function fetchQuotes() {
       try {
-        const response = await fetch('http://localhost:3000/api/quotes')
+        // The API layer handles the actual HTTP request.
+        const data = await getQuotes()
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch quotes')
-        }
-
-        const data = await response.json()
         setQuotes(data)
       } catch (error) {
         setError(error.message)
