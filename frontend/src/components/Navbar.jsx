@@ -1,29 +1,37 @@
-function Navbar() {
+function Navbar({
+  onAddQuote,
+}) {
   return (
-    <nav className="flex items-center justify-between border-b border-stone-200 pb-6">
-      <a
-        href="/"
-        className="font-serif text-xl font-bold"
-      >
-        Vincent's Quotes
-      </a>
+    <header className="border-b border-stone-200 bg-white">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
 
-      <div className="flex gap-6 text-sm">
-        <a
-          href="/"
-          className="text-stone-900"
-        >
-          Quotes
-        </a>
+        <div>
+          <h1 className="font-serif text-2xl">
+            Vincent's Quotes
+          </h1>
 
-        <a
-          href="#about"
-          className="text-stone-500 hover:text-stone-900"
-        >
-          About
-        </a>
+          <p className="text-sm text-stone-500">
+            Thoughts worth remembering
+          </p>
+        </div>
+
+        <nav className="flex gap-4">
+          <button
+            className="text-stone-600 hover:text-black"
+          >
+            Quotes
+          </button>
+
+          <button
+            onClick={onAddQuote}
+            className="rounded-lg bg-stone-900 px-4 py-2 text-white"
+          >
+            Add Quote
+          </button>
+        </nav>
+
       </div>
-    </nav>
+    </header>
   )
 }
 

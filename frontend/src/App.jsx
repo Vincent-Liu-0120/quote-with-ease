@@ -9,6 +9,7 @@ import QuoteForm from './components/QuoteForm'
 import Navbar from './components/Navbar'
 import SearchBar from './components/SearchBar'
 import TagFilter from './components/TagFilter'
+import QuotePreview from './components/QuotePreview'
 
 function App() {
 
@@ -18,6 +19,8 @@ function App() {
   const [editingQuote, setEditingQuote] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTag, setSelectedTag] = useState(null)
+  const [selectedQuote, setSelectedQuote] = useState(null)
+  const [showForm, setShowForm] = useState(false)
 
   function handleQuoteCreated(newQuote) {
     // Add the newly created quote to the beginning of the current quote list.
@@ -46,11 +49,16 @@ function App() {
     // QuoteForm will use this object to populate its fields.
     setEditingQuote(quote)
 
-    // Scroll back to the form so the user can edit it.
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    })
+    // Open the form.
+    setShowForm(true)
+  }
+
+  function handleAddQuote() {
+    // Make sure the form starts in "Add Quote" mode.
+    setEditingQuote(null)
+
+    // Open the form.
+    setShowForm(true)
   }
 
   function handleQuoteUpdated(updatedQuote) {
@@ -66,6 +74,11 @@ function App() {
     // Exit edit mode.
     setEditingQuote(null)
   }
+
+  function handlePreviewQuote(quote) {
+    setSelectedQuote(quote)
+  }
+
   const availableTags = [
     ...new Set(
       quotes.flatMap((quote) => quote.tags || [])
@@ -111,7 +124,7 @@ function App() {
     <main className="min-h-screen bg-stone-100 px-6 py-8">
       <div className="mx-auto max-w-5xl">
 
-        <Navbar />
+        <Navbar onAddQuote={handleAddQuote} />
 
         <Header />
 
@@ -126,15 +139,8 @@ function App() {
           onSelectTag={setSelectedTag}
         />
 
-        <QuoteForm
-          editingQuote={editingQuote}
-          onQuoteCreated={handleQuoteCreated}
-          onQuoteUpdated={handleQuoteUpdated}
-          onCancelEdit={() => setEditingQuote(null)}
-        />
-
         {loading && <p>Loading quotes...</p>}
-
+        
         {error && (
           <p className="text-red-600">
             {error}
@@ -151,10 +157,42 @@ function App() {
             quotes={filteredQuotes}
             onEdit={handleEditQuote}
             onDelete={handleDeleteQuote}
+            onPreview={handlePreviewQuote}
           />
         )}
 
       </div>
+
+      {showForm && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 px-4 py-8">
+            <div className="mx-auto max-w-2xl">
+              <QuoteForm
+                editingQuote={editingQuote}
+                onQuoteCreated={(quote) => {
+                  handleQuoteCreated(quote)
+                  setShowForm(false)
+                }}
+                onQuoteUpdated={(quote) => {
+                  handleQuoteUpdated(quote)
+                  setShowForm(false)
+                }}
+                onCancelEdit={() => {
+                  setEditingQuote(null)
+                  setShowForm(false)
+                }}
+              />
+            </div>
+          </div>
+      )}
+      
+      <QuotePreview
+        quote={selectedQuote}
+        onClose={() => setSelectedQuote(null)}
+        onEdit={(quote) => {
+          setSelectedQuote(null)
+          handleEditQuote(quote)
+        }}
+      />
     </main>
   )
 }

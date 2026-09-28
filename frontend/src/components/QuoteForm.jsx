@@ -16,6 +16,7 @@ function QuoteForm({
     text: '',
     author: '',
     book: '',
+    bookNumber: '',
     part: '',
     section: '',
     chapter: '',
@@ -33,6 +34,7 @@ function QuoteForm({
         text: editingQuote.text,
         author: editingQuote.author,
         book: editingQuote.book || '',
+        bookNumber: editingQuote.bookNumber || '',
         part: editingQuote.part || '',
         section: editingQuote.section || '',
         chapter: editingQuote.chapter || '',
@@ -61,6 +63,7 @@ function QuoteForm({
             text: form.text,
             author: form.author,
             book: form.book,
+            bookNumber: form.bookNumber,
             part: form.part,
             section: form.section,
             chapter: form.chapter,
@@ -92,6 +95,7 @@ function QuoteForm({
                 text: '',
                 author: '',
                 book: '',
+                bookNumber: '',
                 part: '',
                 section: '',
                 chapter: '',
@@ -110,9 +114,20 @@ function QuoteForm({
       onSubmit={handleSubmit}
       className="mb-12 rounded-xl bg-white p-6 shadow-sm"
     >
-      <h2 className="mb-6 text-2xl font-serif font-bold">
-        {editingQuote ? 'Edit Quote' : 'Add a Quote'}
-      </h2>
+        <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-serif font-bold">
+                {editingQuote ? 'Edit Quote' : 'Add a Quote'}
+            </h2>
+
+            <button
+                type="button"
+                onClick={onCancelEdit}
+                className="text-2xl text-stone-400 hover:text-stone-900"
+                aria-label="Close"
+            >
+                ×
+            </button>
+        </div>
 
       <div className="space-y-4">
         <textarea
@@ -139,6 +154,14 @@ function QuoteForm({
             value={form.book}
             onChange={handleChange}
             placeholder="Book"
+            className="w-full rounded-lg border border-stone-300 p-3"
+        />
+
+        <input
+            name="bookNumber"
+            value={form.bookNumber}
+            onChange={handleChange}
+            placeholder="Book One / Volume One"
             className="w-full rounded-lg border border-stone-300 p-3"
         />
 

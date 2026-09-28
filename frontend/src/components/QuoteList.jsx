@@ -1,6 +1,11 @@
 import QuoteCard from './QuoteCard'
 
-function QuoteList({ quotes, onEdit, onDelete }) {
+function QuoteList({ 
+    quotes,
+    onEdit,
+    onDelete,
+    onPreview
+}) {
   if (quotes.length === 0) {
     return (
       <p className="py-12 text-center text-stone-500">
@@ -17,6 +22,7 @@ function QuoteList({ quotes, onEdit, onDelete }) {
           quote={quote}
           onEdit={onEdit}
           onDelete={onDelete}
+          onPreview={onPreview}
         />
       ))}
     </section>

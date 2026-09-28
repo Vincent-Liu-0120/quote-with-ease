@@ -1,9 +1,21 @@
-function QuoteCard({ quote, onEdit, onDelete }) {
+function QuoteCard({ 
+    quote,
+    onEdit,
+    onDelete,
+    onPreview
+}) {
   return (
     <article className="rounded-xl bg-white p-6 shadow-sm">
-        <p className="font-serif text-xl leading-relaxed">
-            {quote.text}
-        </p>
+        
+        <button
+            type="button"
+            onClick={() => onPreview(quote)}
+            className="text-left"
+        >
+            <p className="font-serif text-xl leading-relaxed hover:text-stone-600">
+                {quote.text}
+            </p>
+        </button>
 
         <div className="mt-6">
             <p className="font-medium">
