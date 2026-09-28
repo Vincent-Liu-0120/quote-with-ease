@@ -19,6 +19,21 @@ const quoteSchema = new mongoose.Schema(
       trim: true,
     },
 
+    part: {
+      type: String,
+      trim: true,
+    },
+
+    section: {
+      type: String,
+      trim: true,
+    },
+
+    chapter: {
+      type: String,
+      trim: true,
+    },
+
     page: {
       type: Number,
     },
