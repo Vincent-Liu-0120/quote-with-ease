@@ -2,7 +2,9 @@ import {
   createQuote,
   updateQuote,
 } from '../api/quotes'
+import TagInput from './TagInput'
 import { useEffect, useState } from 'react'
+
 
 function QuoteForm({
   editingQuote,
@@ -18,7 +20,7 @@ function QuoteForm({
     section: '',
     chapter: '',
     page: '',
-    tags: '',
+    tags: [],
     })
 
     const [saving, setSaving] = useState(false)
@@ -35,13 +37,13 @@ function QuoteForm({
         section: editingQuote.section || '',
         chapter: editingQuote.chapter || '',
         page: editingQuote.page || '',
-        tags: editingQuote.tags?.join(', ') || '',
+        tags: editingQuote.tags || [],
         })
     }
     }, [editingQuote])
 
     function handleChange(event) {
-        const { name, value } = event.target
+        const { name, value } = event.target.value
 
         setForm((current) => ({
         ...current,
@@ -63,10 +65,7 @@ function QuoteForm({
             section: form.section,
             chapter: form.chapter,
             page: form.page ? Number(form.page) : undefined,
-            tags: form.tags
-                .split(',')
-                .map((tag) => tag.trim())
-                .filter(Boolean),
+            tags: form.tags,
         }
 
         try {
@@ -97,7 +96,7 @@ function QuoteForm({
                 section: '',
                 chapter: '',
                 page: '',
-                tags: '',
+                tags: [],
             })
         } catch (error) {
             setError(error.message)
@@ -176,13 +175,21 @@ function QuoteForm({
             className="w-full rounded-lg border border-stone-300 p-3"
         />
 
-        <input
-            name="tags"
-            value={form.tags}
-            onChange={handleChange}
-            placeholder="Tags (e.g. philosophy, nature)"
-            className="w-full rounded-lg border border-stone-300 p-3"
-        />
+        <div>
+            <label className="mb-2 block text-sm font-medium text-stone-700">
+                Tags
+            </label>
+
+            <TagInput
+                tags={form.tags}
+                onChange={(tags) =>
+                setForm((current) => ({
+                    ...current,
+                    tags,
+                }))
+                }
+            />
+        </div>
 
         {error && (
           <p className="text-red-600">
