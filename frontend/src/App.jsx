@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import QuoteList from './components/QuoteList'
 import QuoteForm from './components/QuoteForm'
+import Navbar from './components/Navbar'
+import SearchBar from './components/SearchBar'
 
 function App() {
 
@@ -13,6 +15,17 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [editingQuote, setEditingQuote] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const filteredQuotes = quotes.filter((quote) => {
+    const search = searchTerm.toLowerCase()
+
+    return (
+      quote.text.toLowerCase().includes(search) ||
+      quote.author.toLowerCase().includes(search) ||
+      quote.book?.toLowerCase().includes(search)
+    )
+  })
 
   function handleQuoteCreated(newQuote) {
     // Add the newly created quote to the beginning of the current quote list.
@@ -80,9 +93,17 @@ function App() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-stone-100 px-6 py-12">
-      <div className="mx-auto max-w-4xl">
+    <main className="min-h-screen bg-stone-100 px-6 py-8">
+      <div className="mx-auto max-w-5xl">
+
+        <Navbar />
+
         <Header />
+
+        <SearchBar
+          value={searchTerm}
+          onChange={setSearchTerm}
+        />
 
         <QuoteForm
           editingQuote={editingQuote}
@@ -101,11 +122,12 @@ function App() {
 
         {!loading && !error && (
           <QuoteList
-            quotes={quotes}
+            quotes={filteredQuotes}
             onEdit={handleEditQuote}
             onDelete={handleDeleteQuote}
           />
         )}
+
       </div>
     </main>
   )
