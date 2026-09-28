@@ -9,7 +9,7 @@ import QuoteForm from './components/QuoteForm'
 import Navbar from './components/Navbar'
 import SearchBar from './components/SearchBar'
 import TagFilter from './components/TagFilter'
-import QuotePreview from './components/QuotePreview'
+import ReadingView from './components/ReadingView'
 
 function App() {
 
@@ -19,7 +19,7 @@ function App() {
   const [editingQuote, setEditingQuote] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTag, setSelectedTag] = useState(null)
-  const [selectedQuote, setSelectedQuote] = useState(null)
+  const [selectedQuoteIndex, setSelectedQuoteIndex] = useState(null)
   const [showForm, setShowForm] = useState(false)
 
   function handleQuoteCreated(newQuote) {
@@ -76,7 +76,11 @@ function App() {
   }
 
   function handlePreviewQuote(quote) {
-    setSelectedQuote(quote)
+    const index = filteredQuotes.findIndex(
+      (item) => item._id === quote._id
+    )
+
+    setSelectedQuoteIndex(index)
   }
 
   const availableTags = [
@@ -184,12 +188,13 @@ function App() {
             </div>
           </div>
       )}
-      
-      <QuotePreview
-        quote={selectedQuote}
-        onClose={() => setSelectedQuote(null)}
+
+      <ReadingView
+        quotes={filteredQuotes}
+        initialIndex={selectedQuoteIndex}
+        onClose={() => setSelectedQuoteIndex(null)}
         onEdit={(quote) => {
-          setSelectedQuote(null)
+          setSelectedQuoteIndex(null)
           handleEditQuote(quote)
         }}
       />
