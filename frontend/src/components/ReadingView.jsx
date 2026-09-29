@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 
 function ReadingQuote({ quote, onEdit }) {
   return (
@@ -65,41 +66,137 @@ function ReadingView({
 }) {
   const containerRef = useRef(null)
 
+  const [currentIndex, setCurrentIndex] = useState(initialIndex)
+
+  /*
+   * Instead of rendering three copies of every quote,
+   * we create a very large virtual list.
+   *
+   * For example:
+   *
+   *   Virtual position:
+   *
+   *   0   1   2   3   4   5   6   7   ...
+   *   ↓   ↓   ↓   ↓   ↓   ↓   ↓   ↓
+   *   Q1  Q2  Q3  Q4  Q1  Q2  Q3  Q4 ...
+   *
+   * The browser only renders the items near the
+   * current viewport.
+   *
+   * So even if we eventually have 100,000 quotes,
+   * we don't render 100,000 DOM elements.
+   */
+  const VIRTUAL_COUNT = 100000
+
+  const virtualizer = useVirtualizer({
+    count: VIRTUAL_COUNT,
+
+    getScrollElement: () => containerRef.current,
+
+    // Every quote occupies exactly one screen.
+    estimateSize: () =>
+      containerRef.current?.clientHeight ||
+      window.innerHeight,
+
+    // Render a few extra items above/below the viewport.
+    overscan: 3,
+
+    /*
+     * Use the actual quote ID as the React key
+     * for each logical quote position.
+     *
+     * We include the virtual index because the same
+     * quote can appear at many different positions.
+     */
+    getItemKey: (index) => {
+      const quote = quotes[index % quotes.length]
+
+      return `${quote._id}-${index}`
+    },
+  })
+
+  /*
+   * Move to the requested quote when Reading Mode opens.
+   *
+   * We start somewhere near the middle of the virtual list.
+   *
+   * This gives us a huge amount of room to scroll
+   * both upward and downward.
+   */
   useEffect(() => {
     if (
       initialIndex === null ||
-      !containerRef.current
+      !containerRef.current ||
+      quotes.length === 0
     ) {
       return
     }
 
-    const container = containerRef.current
-    const quoteHeight = container.clientHeight
+    const middle = Math.floor(VIRTUAL_COUNT / 2)
 
-    container.scrollTo({
-      top: initialIndex * quoteHeight,
-      behavior: 'instant',
+    /*
+     * Adjust the middle position so that it represents
+     * the quote that the user originally selected.
+     *
+     * Example:
+     *
+     * middle = 50000
+     * initialIndex = 2
+     *
+     * We find the nearest virtual position to 50000
+     * whose logical quote is #2.
+     */
+    const remainder = middle % quotes.length
+
+    const startingIndex =
+      middle - remainder + initialIndex
+
+    virtualizer.scrollToIndex(startingIndex, {
+      align: 'start',
     })
-  }, [initialIndex])
+
+    setCurrentIndex(initialIndex)
+  }, [initialIndex, quotes.length])
 
   function handleScroll(event) {
+    if (quotes.length === 0) {
+      return
+    }
+
     const container = event.currentTarget
 
-    const scrollPosition = container.scrollTop
     const screenHeight = container.clientHeight
 
-    const currentIndex = Math.round(
-      scrollPosition / screenHeight
+    if (screenHeight === 0) {
+      return
+    }
+
+    /*
+     * Determine which virtual item is currently
+     * closest to the top of the screen.
+     */
+    const virtualIndex = Math.round(
+      container.scrollTop / screenHeight
     )
 
-    // The last screen is a copy of the first quote.
-    // When we reach it, jump back to the real first quote.
-    if (currentIndex === quotes.length) {
-      container.scrollTo({
-        top: 0,
-        behavior: 'instant',
-      })
-    }
+    /*
+     * Convert the virtual position into the actual
+     * quote position.
+     *
+     * Example with 4 quotes:
+     *
+     * virtual index:
+     *
+     * 0  1  2  3  4  5  6  7
+     *
+     * logical index:
+     *
+     * 0  1  2  3  0  1  2  3
+     */
+    const logicalIndex =
+      virtualIndex % quotes.length
+
+    setCurrentIndex(logicalIndex)
   }
 
   if (
@@ -110,9 +207,13 @@ function ReadingView({
     return null
   }
 
+  const virtualItems =
+    virtualizer.getVirtualItems()
+
   return (
     <div className="fixed inset-0 z-50 bg-stone-100">
 
+      {/* Back button */}
       <button
         type="button"
         onClick={onClose}
@@ -121,26 +222,62 @@ function ReadingView({
         ← Back
       </button>
 
+      {/* Current quote position */}
+      <div className="absolute right-6 top-6 z-10 text-sm text-stone-500">
+        {currentIndex + 1} / {quotes.length}
+      </div>
+
+      {/* Virtualized scroll container */}
       <div
         ref={containerRef}
         onScroll={handleScroll}
         className="h-screen snap-y snap-mandatory overflow-y-auto"
       >
-        {quotes.map((quote) => (
-          <ReadingQuote
-            key={quote._id}
-            quote={quote}
-            onEdit={onEdit}
-          />
-        ))}
 
-        {quotes.length > 1 && (
-          <ReadingQuote
-            key="loop-first"
-            quote={quotes[0]}
-            onEdit={onEdit}
-          />
-        )}
+        {/* 
+         * This element represents the entire virtual list.
+         *
+         * It can be extremely tall without containing
+         * thousands of actual DOM elements.
+         */}
+        <div
+          style={{
+            height: `${virtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+
+          {virtualItems.map((virtualItem) => {
+            /*
+             * Convert the virtual position into the
+             * real quote position.
+             */
+            const quoteIndex =
+              virtualItem.index % quotes.length
+
+            const quote = quotes[quoteIndex]
+
+            return (
+              <div
+                key={virtualItem.key}
+                data-index={virtualItem.index}
+                ref={virtualizer.measureElement}
+                className="absolute left-0 top-0 w-full snap-start"
+                style={{
+                  height: `${virtualItem.size}px`,
+                  transform: `translateY(${virtualItem.start}px)`,
+                }}
+              >
+                <ReadingQuote
+                  quote={quote}
+                  onEdit={onEdit}
+                />
+              </div>
+            )
+          })}
+
+        </div>
       </div>
     </div>
   )
