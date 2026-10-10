@@ -1,4 +1,4 @@
-const API_URL = `${import.meta.env.VITE_API_URL}/api/quotes`
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/quotes`
 
 export async function getQuotes() {
   const response = await request(API_URL)
