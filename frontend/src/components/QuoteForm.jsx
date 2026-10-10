@@ -37,17 +37,26 @@ function QuoteForm({
     const [wikiLoading, setWikiLoading] = useState(false)
     const [previewError, setPreviewError] = useState(false)
 
+    function normalizeAuthorForLookup(author) {
+      return author
+        .replace(/[*_~`]/g, '')
+        .replace(/^[—-]\s*/, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+    }
+
     async function fetchWikipediaImage(author) {
+      const lookupName = normalizeAuthorForLookup(author)
       const response = await fetch(
         `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(
-          author.replaceAll(' ', '_')
+          lookupName.replaceAll(' ', '_')
         )}`
       )
 
       if (response.ok) {
         const page = await response.json()
         const imageUrl =
-          page.originalimage?.source || page.thumbnail?.source
+          page.thumbnail?.source || page.originalimage?.source
 
         if (imageUrl) {
           return imageUrl
@@ -59,11 +68,11 @@ function QuoteForm({
         format: 'json',
         generator: 'search',
         gsrnamespace: '0',
-        gsrsearch: author,
+        gsrsearch: lookupName,
         gsrlimit: '5',
         prop: 'pageimages',
         piprop: 'thumbnail|original',
-        pithumbsize: '1200',
+        pithumbsize: '900',
         origin: '*',
       })
       const searchResponse = await fetch(

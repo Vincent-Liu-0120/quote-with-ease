@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 const CANVAS_WIDTH = 1080
 const CANVAS_HEIGHT = 1920
 const HORIZONTAL_PADDING = 96
+const ATTRIBUTION_TOP = 1280
+const MIN_QUOTE_FONT_SIZE = 12
 
 const DEFAULT_STYLE = {
   quoteAlignment: 'left',
+  quoteVerticalPosition: 37,
   fontFamily: 'Georgia',
   quoteSize: 58,
   authorSize: 40,
@@ -27,7 +30,9 @@ const FONT_SUGGESTIONS = [
 ]
 
 function getFontStack(fontFamily) {
-  const safeFontFamily = fontFamily.trim().replaceAll('"', '')
+  const safeFontFamily = String(fontFamily || '')
+    .trim()
+    .replaceAll('"', '')
   return `"${safeFontFamily || 'Georgia'}", Georgia, serif`
 }
 
@@ -73,26 +78,84 @@ function getPreviewPosition(alignment) {
 }
 
 function wrapText(context, text, maxWidth) {
-  const words = text.split(/\s+/)
   const lines = []
-  let line = ''
+  const paragraphs = text.split(/\r?\n/)
 
-  words.forEach((word) => {
-    const nextLine = line ? `${line} ${word}` : word
+  paragraphs.forEach((paragraph) => {
+    const words = paragraph.split(/\s+/).filter(Boolean)
+    let line = ''
 
-    if (context.measureText(nextLine).width > maxWidth && line) {
+    if (words.length === 0) {
+      lines.push('')
+      return
+    }
+
+    words.forEach((word) => {
+      const nextLine = line ? `${line} ${word}` : word
+
+      if (context.measureText(nextLine).width > maxWidth && line) {
+        lines.push(line)
+        line = word
+      } else {
+        line = nextLine
+      }
+    })
+
+    if (line) {
       lines.push(line)
-      line = word
-    } else {
-      line = nextLine
     }
   })
 
-  if (line) {
-    lines.push(line)
+  return lines
+}
+
+function getQuoteLayout(
+  context,
+  text,
+  fontStack,
+  requestedSize,
+  quoteVerticalPosition
+) {
+  const maxWidth = CANVAS_WIDTH - HORIZONTAL_PADDING * 2
+  const quoteTop = (CANVAS_HEIGHT * quoteVerticalPosition) / 100
+  const availableHeight = ATTRIBUTION_TOP - quoteTop
+
+  for (let fontSize = requestedSize; fontSize >= MIN_QUOTE_FONT_SIZE; fontSize -= 1) {
+    context.font = `700 ${fontSize}px ${fontStack}`
+    const lines = wrapText(context, `“${text}”`, maxWidth)
+    const lineHeight = Math.round(fontSize * 1.34)
+    const quoteHeight = fontSize + (lines.length - 1) * lineHeight
+
+    if (quoteHeight <= availableHeight) {
+      return { fontSize, lines, lineHeight, quoteTop }
+    }
   }
 
-  return lines
+  const fontSize = MIN_QUOTE_FONT_SIZE
+  context.font = `700 ${fontSize}px ${fontStack}`
+  return {
+    fontSize,
+    lines: wrapText(context, `“${text}”`, maxWidth),
+    lineHeight: Math.round(fontSize * 1.34),
+    quoteTop,
+  }
+}
+
+function getPreviewQuoteSize(quote, style) {
+  const measurementCanvas = document.createElement('canvas')
+  const context = measurementCanvas.getContext('2d')
+
+  if (!context) {
+    return style.quoteSize
+  }
+
+  return getQuoteLayout(
+    context,
+    style.quoteText ?? quote.text ?? '',
+    getFontStack(style.fontFamily),
+    style.quoteSize,
+    style.quoteVerticalPosition
+  ).fontSize
 }
 
 function loadImage(url) {
@@ -210,11 +273,21 @@ async function createQuoteImage(quote, style) {
   )
   context.fillStyle = textColor
   context.fillStyle = textColor
-  context.font = `700 ${style.quoteSize}px ${fontStack}`
-  const quoteLines = wrapText(context, `“${quote.text}”`, maxWidth)
-  const quoteLineHeight = Math.round(style.quoteSize * 1.34)
-  const quoteY = 620 - (quoteLines.length - 1) * quoteLineHeight * 0.5
-  drawLines(context, quoteLines, textX, quoteY, quoteLineHeight)
+  const quoteLayout = getQuoteLayout(
+    context,
+    style.quoteText ?? quote.text ?? '',
+    fontStack,
+    style.quoteSize,
+    style.quoteVerticalPosition
+  )
+  context.font = `700 ${quoteLayout.fontSize}px ${fontStack}`
+  drawLines(
+    context,
+    quoteLayout.lines,
+    textX,
+    quoteLayout.quoteTop + quoteLayout.fontSize,
+    quoteLayout.lineHeight
+  )
 
   context.textAlign = 'center'
   context.font = `700 ${style.authorSize}px ${fontStack}`
@@ -259,12 +332,12 @@ function downloadImage(file) {
   URL.revokeObjectURL(url)
 }
 
-function SizeControl({ label, name, value, onChange, min, max }) {
+function SizeControl({ label, name, value, onChange, min, max, unit = 'px' }) {
   return (
     <label className="block text-sm font-medium text-stone-700">
       <span className="flex justify-between">
         {label}
-        <span className="font-mono text-xs text-stone-500">{value}px</span>
+        <span className="font-mono text-xs text-stone-500">{value}{unit}</span>
       </span>
       <input
         type="range"
@@ -283,6 +356,10 @@ function SharePreview({ quote, style }) {
   const quotePosition = getPreviewPosition(style.quoteAlignment)
   const textColor = quote.fontColor || '#292722'
   const referenceLines = getReferenceLines(quote)
+  const quoteSize = useMemo(
+    () => getPreviewQuoteSize(quote, style),
+    [quote, style]
+  )
 
   return (
     <div
@@ -299,12 +376,13 @@ function SharePreview({ quote, style }) {
     >
       <div className="absolute left-[8.9%] top-[6.9%] h-1 w-10 bg-[#b8871e]" />
       <p
-        className={`absolute top-[29%] w-[82.2%] font-bold leading-[1.34] ${quotePosition}`}
+        className={`absolute w-[82.2%] whitespace-pre-line font-bold leading-[1.34] ${quotePosition}`}
         style={{
-          fontSize: `${style.quoteSize / 3.05}px`,
+          fontSize: `${quoteSize / 3.05}px`,
+          top: `${style.quoteVerticalPosition}%`,
         }}
       >
-        “{quote.text}”
+        “{style.quoteText ?? quote.text ?? ''}”
       </p>
       <div className="absolute left-[8.9%] top-[66.7%] w-[82.2%] text-center">
         <p
@@ -344,15 +422,22 @@ function SharePreview({ quote, style }) {
 
 function ShareButton({ quote }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [style, setStyle] = useState(DEFAULT_STYLE)
+  const [style, setStyle] = useState(() => ({
+    ...DEFAULT_STYLE,
+    quoteText: quote.text,
+  }))
   const [status, setStatus] = useState(null)
   const [sharing, setSharing] = useState(false)
+  const fittedQuoteSize = useMemo(
+    () => getPreviewQuoteSize(quote, style),
+    [quote, style]
+  )
 
   function handleStyleChange(event) {
     const { name, value } = event.target
     setStyle((current) => ({
       ...current,
-      [name]: ['quoteSize', 'authorSize', 'referenceSize', 'veilOpacity'].includes(name)
+      [name]: ['quoteSize', 'authorSize', 'referenceSize', 'veilOpacity', 'quoteVerticalPosition'].includes(name)
         ? Number(value)
         : value,
     }))
@@ -432,6 +517,20 @@ function ShareButton({ quote }) {
 
             <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
               <div className="order-2 space-y-6 lg:order-1">
+                <label className="block text-sm font-semibold text-[#292722]">
+                  Quote text and line breaks
+                  <textarea
+                    name="quoteText"
+                    value={style.quoteText}
+                    onChange={handleStyleChange}
+                    rows="6"
+                    className="mt-2 w-full resize-y rounded-lg border border-stone-300 bg-white px-3 py-2 font-normal leading-relaxed text-stone-800 outline-none focus:border-[#a87516] focus:ring-2 focus:ring-[#f3e3bc]"
+                  />
+                  <span className="mt-1 block text-xs font-normal text-stone-500">
+                    Press Enter where you want a sentence to start on a new row.
+                  </span>
+                </label>
+
                 <fieldset>
                   <legend className="text-sm font-semibold text-[#292722]">Quote alignment</legend>
                   <div className="mt-3 grid grid-cols-3 gap-2">
@@ -473,10 +572,24 @@ function ShareButton({ quote }) {
                 </label>
 
                 <div className="space-y-5 rounded-xl border border-[#e3d6b8] bg-white p-4">
+                  <SizeControl
+                    label="Quote vertical position"
+                    name="quoteVerticalPosition"
+                    value={style.quoteVerticalPosition}
+                    min="15"
+                    max="45"
+                    onChange={handleStyleChange}
+                    unit="%"
+                  />
                   <SizeControl label="Quote size" name="quoteSize" value={style.quoteSize} min="40" max="80" onChange={handleStyleChange} />
                   <SizeControl label="Author size" name="authorSize" value={style.authorSize} min="26" max="56" onChange={handleStyleChange} />
                   <SizeControl label="Reference size" name="referenceSize" value={style.referenceSize} min="18" max="42" onChange={handleStyleChange} />
                 </div>
+                {fittedQuoteSize < style.quoteSize && (
+                  <p className="text-xs text-stone-600">
+                    Long quote detected: the preview and shared image use {fittedQuoteSize}px to keep the full quote visible.
+                  </p>
+                )}
 
                 <div className="rounded-xl border border-[#e3d6b8] bg-white p-4">
                   <label className="flex items-center justify-between gap-4 text-sm font-medium text-stone-700">
