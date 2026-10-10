@@ -17,7 +17,7 @@ function QuoteCard({
 
   return (
     <article
-      className="rounded-xl bg-[#fffaf0] p-6 shadow-sm"
+      className="rounded-xl bg-[#fffaf0] p-4 shadow-sm sm:p-6"
       style={cardStyle}
     >
         
@@ -26,12 +26,12 @@ function QuoteCard({
             onClick={() => onPreview(quote)}
             className="text-left"
         >
-            <p className="font-serif text-xl leading-relaxed hover:text-stone-600">
+            <p className="font-serif text-lg leading-relaxed hover:text-stone-600 sm:text-xl">
                 {quote.text}
             </p>
         </button>
 
-        <div className="mt-6">
+        <div className="mt-5 sm:mt-6">
             <p className="font-medium">
                 {quote.author}
             </p>
@@ -48,7 +48,7 @@ function QuoteCard({
             )}
         </div>
 
-        <div className="mt-6 flex gap-4">
+        <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 sm:mt-6">
             <button
                 onClick={() => onEdit(quote)}
                 className="text-sm text-stone-700 hover:text-stone-900"

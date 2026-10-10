@@ -3,7 +3,7 @@ function Navbar({
 }) {
   return (
     <header className="border-b border-[#d8c9a8] bg-[#fffaf0]">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
 
         <div>
           <h1 className="font-serif text-2xl">
@@ -15,16 +15,16 @@ function Navbar({
           </p>
         </div>
 
-        <nav className="flex gap-4">
+        <nav className="flex w-full gap-3 sm:w-auto">
           <button
-            className="text-stone-600 hover:text-black"
+            className="flex-1 text-stone-600 hover:text-black sm:flex-none"
           >
             Quotes
           </button>
 
           <button
             onClick={onAddQuote}
-            className="rounded-lg bg-[#292722] px-4 py-2 text-[#fffaf0] hover:bg-[#4a463d]"
+            className="flex-1 rounded-lg bg-[#292722] px-4 py-2 text-[#fffaf0] hover:bg-[#4a463d] sm:flex-none"
           >
             Add Quote
           </button>

@@ -23,6 +23,35 @@ function wrapText(context, text, maxWidth) {
   return lines
 }
 
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.crossOrigin = 'anonymous'
+    image.onload = () => resolve(image)
+    image.onerror = () =>
+      reject(
+        new Error(
+          'The author image could not be used in the shared image.'
+        )
+      )
+    image.src = url
+  })
+}
+
+function drawImageCover(context, image, width, height) {
+  const scale = Math.max(width / image.width, height / image.height)
+  const renderedWidth = image.width * scale
+  const renderedHeight = image.height * scale
+
+  context.drawImage(
+    image,
+    (width - renderedWidth) / 2,
+    (height - renderedHeight) / 2,
+    renderedWidth,
+    renderedHeight
+  )
+}
+
 async function createQuoteImage(quote) {
   const canvas = document.createElement('canvas')
   canvas.width = 1080
@@ -35,6 +64,14 @@ async function createQuoteImage(quote) {
 
   context.fillStyle = '#f7f0df'
   context.fillRect(0, 0, canvas.width, canvas.height)
+
+  if (quote.authorBackground) {
+    const authorImage = await loadImage(quote.authorBackground)
+    drawImageCover(context, authorImage, canvas.width, canvas.height)
+    context.fillStyle = 'rgba(247, 240, 223, 0.84)'
+    context.fillRect(0, 0, canvas.width, canvas.height)
+  }
+
   context.fillStyle = '#b8871e'
   context.fillRect(96, 132, 120, 12)
 
@@ -64,7 +101,6 @@ async function createQuoteImage(quote) {
     context.fillText(source, 96, 1350)
   }
 
-  context.fillStyle = '#665f52'
   context.font = '24px Arial, sans-serif'
   context.fillText('Vincent’s Quotes', 96, 1790)
 
@@ -90,20 +126,9 @@ function downloadImage(file) {
 }
 
 function ShareButton({ quote }) {
-  const [isOpen, setIsOpen] = useState(false)
   const [status, setStatus] = useState(null)
 
-  async function handleSaveImage() {
-    try {
-      const file = await createQuoteImage(quote)
-      downloadImage(file)
-      setStatus('Image saved')
-    } catch (error) {
-      setStatus(error.message)
-    }
-  }
-
-  async function handleInstagramStory() {
+  async function handleShare() {
     try {
       const file = await createQuoteImage(quote)
 
@@ -115,10 +140,10 @@ function ShareButton({ quote }) {
           title: `Quote by ${quote.author}`,
           files: [file],
         })
-        setStatus('Share sheet opened')
+        setStatus('Shared')
       } else {
         downloadImage(file)
-        setStatus('Image saved — open Instagram to share it')
+        setStatus('Image saved')
       }
     } catch (error) {
       if (error.name !== 'AbortError') {
@@ -128,39 +153,14 @@ function ShareButton({ quote }) {
   }
 
   return (
-    <span className="relative inline-block">
-      <button
-        type="button"
-        onClick={() => {
-          setIsOpen((current) => !current)
-          setStatus(null)
-        }}
-        className="text-sm text-stone-600 hover:text-stone-900"
-        aria-label={`Share quote by ${quote.author}`}
-        aria-expanded={isOpen}
-      >
-        <span aria-live="polite">{status || 'Share'}</span>
-      </button>
-
-      {isOpen && (
-        <span className="absolute bottom-full left-0 z-20 mb-2 flex w-56 flex-col gap-2 rounded-lg border border-[#d8c9a8] bg-[#fffaf0] p-3 shadow-lg">
-          <button
-            type="button"
-            onClick={handleSaveImage}
-            className="rounded-md px-3 py-2 text-left text-sm text-[#292722] hover:bg-[#f1e5c9]"
-          >
-            Save as image
-          </button>
-          <button
-            type="button"
-            onClick={handleInstagramStory}
-            className="rounded-md px-3 py-2 text-left text-sm text-[#292722] hover:bg-[#f1e5c9]"
-          >
-            Share to Instagram Story
-          </button>
-        </span>
-      )}
-    </span>
+    <button
+      type="button"
+      onClick={handleShare}
+      className="text-sm text-stone-600 hover:text-stone-900"
+      aria-label={`Share quote by ${quote.author}`}
+    >
+      <span aria-live="polite">{status || 'Share'}</span>
+    </button>
   )
 }
 

@@ -14,12 +14,12 @@ function ReadingQuote({ quote, onEdit }) {
 
   return (
     <article
-      className="flex min-h-screen snap-start items-center px-8 py-16"
+      className="flex min-h-screen snap-start items-center px-5 py-16 sm:px-8"
       style={quoteStyle}
     >
       <div className="mx-auto w-full max-w-4xl">
 
-        <p className="font-serif text-3xl leading-relaxed md:text-5xl">
+        <p className="font-serif text-2xl leading-relaxed sm:text-3xl md:text-5xl">
           “{quote.text}”
         </p>
 

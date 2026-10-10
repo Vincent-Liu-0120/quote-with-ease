@@ -139,7 +139,7 @@ function App() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-[#f7f0df] px-6 py-8 text-[#292722]">
+    <main className="min-h-screen bg-[#f7f0df] px-4 py-4 text-[#292722] sm:px-6 sm:py-8">
       <div className="mx-auto max-w-5xl">
 
         <Navbar onAddQuote={handleAddQuote} />
@@ -182,7 +182,7 @@ function App() {
       </div>
 
       {showForm && (
-          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 px-4 py-8">
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 px-3 py-4 sm:px-4 sm:py-8">
             <div className="mx-auto max-w-2xl">
               <QuoteForm
                 editingQuote={editingQuote}
