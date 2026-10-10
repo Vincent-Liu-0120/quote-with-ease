@@ -1,11 +1,25 @@
+import ShareButton from './ShareButton'
+
 function QuoteCard({ 
     quote,
     onEdit,
     onDelete,
     onPreview
 }) {
+  const cardStyle = {
+    color: quote.fontColor || '#292722',
+    ...(quote.authorBackground && {
+      backgroundImage: `linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,255,255,.78)), url("${quote.authorBackground}")`,
+      backgroundPosition: 'center',
+      backgroundSize: 'cover',
+    }),
+  }
+
   return (
-    <article className="rounded-xl bg-white p-6 shadow-sm">
+    <article
+      className="rounded-xl bg-[#fffaf0] p-6 shadow-sm"
+      style={cardStyle}
+    >
         
         <button
             type="button"
@@ -27,8 +41,8 @@ function QuoteCard({
                 {quote.book}
 
                 {quote.part && ` · ${quote.part}`}
-                {quote.section && ` · ${quote.section}`}
-                {quote.chapter && ` · ${quote.chapter}`}
+                {quote.chapter && ` · Chapter ${quote.chapter}`}
+                {quote.section && ` · Section ${quote.section}`}
                 {quote.page && ` · p. ${quote.page}`}
                 </p>
             )}
@@ -41,6 +55,8 @@ function QuoteCard({
             >
             Edit
             </button>
+
+            <ShareButton quote={quote} />
 
             <button
                 onClick={() => onDelete(quote._id)}

@@ -2,7 +2,7 @@ function Navbar({
   onAddQuote,
 }) {
   return (
-    <header className="border-b border-stone-200 bg-white">
+    <header className="border-b border-[#d8c9a8] bg-[#fffaf0]">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
 
         <div>
@@ -24,7 +24,7 @@ function Navbar({
 
           <button
             onClick={onAddQuote}
-            className="rounded-lg bg-stone-900 px-4 py-2 text-white"
+            className="rounded-lg bg-[#292722] px-4 py-2 text-[#fffaf0] hover:bg-[#4a463d]"
           >
             Add Quote
           </button>

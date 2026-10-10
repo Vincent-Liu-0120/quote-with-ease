@@ -1,48 +1,153 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   createQuote,
   updateQuote,
 } from '../api/quotes'
 import TagInput from './TagInput'
 
+function getInitialForm(editingQuote) {
+  return {
+    text: editingQuote?.text || '',
+    author: editingQuote?.author || '',
+    authorBackground: editingQuote?.authorBackground || '',
+    fontColor: editingQuote?.fontColor || '#292722',
+    book: editingQuote?.book || '',
+    bookNumber: editingQuote?.bookNumber || '',
+    part: editingQuote?.part || '',
+    section: editingQuote?.section || '',
+    chapter: editingQuote?.chapter || '',
+    page: editingQuote?.page || '',
+    tags: editingQuote?.tags || [],
+  }
+}
 
 function QuoteForm({
   editingQuote,
   onQuoteCreated,
   onQuoteUpdated,
   onCancelEdit,
+  suggestedTags,
 }) {
-    const [form, setForm] = useState({
-    text: '',
-    author: '',
-    book: '',
-    bookNumber: '',
-    part: '',
-    section: '',
-    chapter: '',
-    page: '',
-    tags: [],
-    })
+    const [form, setForm] = useState(() =>
+      getInitialForm(editingQuote)
+    )
 
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState(null)
+    const [wikiLoading, setWikiLoading] = useState(false)
+    const [previewError, setPreviewError] = useState(false)
 
-    useEffect(() => {
-    // When editingQuote changes, copy its data into the form.
-    if (editingQuote) {
-        setForm({
-        text: editingQuote.text,
-        author: editingQuote.author,
-        book: editingQuote.book || '',
-        bookNumber: editingQuote.bookNumber || '',
-        part: editingQuote.part || '',
-        section: editingQuote.section || '',
-        chapter: editingQuote.chapter || '',
-        page: editingQuote.page || '',
-        tags: editingQuote.tags || [],
-        })
+    async function fetchWikipediaImage(author) {
+      const response = await fetch(
+        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(
+          author.replaceAll(' ', '_')
+        )}`
+      )
+
+      if (response.ok) {
+        const page = await response.json()
+        const imageUrl =
+          page.originalimage?.source || page.thumbnail?.source
+
+        if (imageUrl) {
+          return imageUrl
+        }
+      }
+
+      const params = new URLSearchParams({
+        action: 'query',
+        format: 'json',
+        generator: 'search',
+        gsrnamespace: '0',
+        gsrsearch: author,
+        gsrlimit: '5',
+        prop: 'pageimages',
+        piprop: 'thumbnail|original',
+        pithumbsize: '1200',
+        origin: '*',
+      })
+      const searchResponse = await fetch(
+        `https://en.wikipedia.org/w/api.php?${params}`
+      )
+
+      if (!searchResponse.ok) {
+        throw new Error('Wikipedia could not be reached.')
+      }
+
+      const data = await searchResponse.json()
+      const pages = Object.values(data.query?.pages || {})
+      const imagePage = pages.find(
+        (page) => page.original?.source || page.thumbnail?.source
+      )
+
+      return imagePage?.original?.source || imagePage?.thumbnail?.source
     }
-    }, [editingQuote])
+
+    async function handleWikipediaImage() {
+      const author = form.author.trim()
+
+      if (!author) {
+        setError('Enter an author before looking up a Wikipedia image.')
+        return
+      }
+
+      setWikiLoading(true)
+      setError(null)
+
+      try {
+        const imageUrl = await fetchWikipediaImage(author)
+
+        if (!imageUrl) {
+          throw new Error('No Wikipedia image was found for this author.')
+        }
+
+        setForm((current) => ({
+          ...current,
+          authorBackground: imageUrl,
+        }))
+        setPreviewError(false)
+      } catch (error) {
+        setError(
+          error instanceof TypeError
+            ? 'Wikipedia could not be reached. Paste an image URL or choose a local image instead.'
+            : error.message
+        )
+      } finally {
+        setWikiLoading(false)
+      }
+    }
+
+    function handleBackgroundFile(event) {
+      const file = event.target.files?.[0]
+
+      if (!file) {
+        return
+      }
+
+      if (!file.type.startsWith('image/')) {
+        setError('Choose an image file for the author background.')
+        return
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Choose an image smaller than 5 MB.')
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onload = () => {
+        setForm((current) => ({
+          ...current,
+          authorBackground: reader.result,
+        }))
+        setPreviewError(false)
+        setError(null)
+      }
+      reader.onerror = () => {
+        setError('The selected image could not be read.')
+      }
+      reader.readAsDataURL(file)
+    }
 
     function handleChange(event) {
         const { name, value } = event.target
@@ -62,6 +167,8 @@ function QuoteForm({
         const quoteData = {
             text: form.text,
             author: form.author,
+            authorBackground: form.authorBackground,
+            fontColor: form.fontColor,
             book: form.book,
             bookNumber: form.bookNumber,
             part: form.part,
@@ -91,9 +198,11 @@ function QuoteForm({
                 onQuoteCreated(savedQuote)
             }
 
-            setForm({
+                setForm({
                 text: '',
                 author: '',
+                authorBackground: '',
+                fontColor: '#292722',
                 book: '',
                 bookNumber: '',
                 part: '',
@@ -150,6 +259,70 @@ function QuoteForm({
         />
 
         <input
+            name="authorBackground"
+            type="url"
+            value={form.authorBackground}
+            onChange={(event) => {
+              handleChange(event)
+              setPreviewError(false)
+            }}
+            placeholder="Author image URL (optional)"
+            className="w-full rounded-lg border border-stone-300 p-3"
+        />
+
+        <div className="rounded-lg border border-[#d8c9a8] bg-[#fffaf0] p-4">
+          <p className="text-sm font-medium text-[#292722]">
+            Author image
+          </p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleWikipediaImage}
+              disabled={wikiLoading}
+              className="rounded-lg bg-[#b8871e] px-4 py-2 text-sm text-white hover:bg-[#946c13] disabled:opacity-50"
+            >
+              {wikiLoading ? 'Looking up...' : 'Use Wikipedia image'}
+            </button>
+            <label className="cursor-pointer rounded-lg border border-[#292722] px-4 py-2 text-sm text-[#292722] hover:bg-[#f1e5c9]">
+              Choose an image
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleBackgroundFile}
+                className="sr-only"
+              />
+            </label>
+          </div>
+          {form.authorBackground && !previewError && (
+            <img
+              src={form.authorBackground}
+              alt={`${form.author || 'Author'} preview`}
+              onError={() => setPreviewError(true)}
+              className="mt-4 h-20 w-20 rounded-lg object-cover"
+            />
+          )}
+          {form.authorBackground && previewError && (
+            <p className="mt-3 text-sm text-red-700">
+              This image could not be previewed. Try another source.
+            </p>
+          )}
+        </div>
+
+        <label className="flex items-center gap-3 text-sm font-medium text-[#292722]">
+          Font color
+          <input
+            name="fontColor"
+            type="color"
+            value={form.fontColor}
+            onChange={handleChange}
+            className="h-10 w-14 cursor-pointer rounded border border-stone-300 bg-white p-1"
+          />
+          <span className="font-mono text-xs text-stone-500">
+            {form.fontColor}
+          </span>
+        </label>
+
+        <input
             name="book"
             value={form.book}
             onChange={handleChange}
@@ -174,18 +347,18 @@ function QuoteForm({
         />
 
         <input
-            name="section"
-            value={form.section}
-            onChange={handleChange}
-            placeholder="Section (e.g. Section Five)"
-            className="w-full rounded-lg border border-stone-300 p-3"
-        />
-
-        <input
             name="chapter"
             value={form.chapter}
             onChange={handleChange}
             placeholder="Chapter"
+            className="w-full rounded-lg border border-stone-300 p-3"
+        />
+
+        <input
+            name="section"
+            value={form.section}
+            onChange={handleChange}
+            placeholder="Section (e.g. Section Five)"
             className="w-full rounded-lg border border-stone-300 p-3"
         />
 
@@ -205,6 +378,7 @@ function QuoteForm({
 
             <TagInput
                 tags={form.tags}
+                suggestions={suggestedTags}
                 onChange={(tags) =>
                 setForm((current) => ({
                     ...current,

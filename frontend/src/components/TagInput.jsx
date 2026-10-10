@@ -1,4 +1,4 @@
-function TagInput({ tags, onChange }) {
+function TagInput({ tags, onChange, suggestions = [] }) {
   function addTag(event) {
     if (event.key !== 'Enter') {
       return
@@ -34,6 +34,12 @@ function TagInput({ tags, onChange }) {
     )
   }
 
+  function addSuggestedTag(tag) {
+    if (!tags.includes(tag)) {
+      onChange([...tags, tag])
+    }
+  }
+
   return (
     <div>
       <div className="mb-3 flex flex-wrap gap-2">
@@ -55,6 +61,28 @@ function TagInput({ tags, onChange }) {
           </span>
         ))}
       </div>
+
+      {suggestions.length > 0 && (
+        <div className="mb-3">
+          <p className="mb-2 text-xs text-stone-500">
+            Suggestions
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {suggestions
+              .filter((suggestion) => !tags.includes(suggestion))
+              .map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => addSuggestedTag(suggestion)}
+                  className="rounded-full border border-[#d8c9a8] px-3 py-1 text-sm text-[#5d4613] hover:bg-[#f1e5c9]"
+                >
+                  + {suggestion}
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
 
       <input
         type="text"

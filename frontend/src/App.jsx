@@ -89,6 +89,20 @@ function App() {
     ),
   ].sort()
 
+  const suggestedTags = [
+    ...new Set([
+      ...availableTags,
+      'philosophy',
+      'literature',
+      'wisdom',
+      'life',
+      'knowledge',
+      'inspiration',
+      'reading',
+      'reflection',
+    ]),
+  ].sort()
+
   const filteredQuotes = quotes.filter((quote) => {
     const search = searchTerm.toLowerCase()
 
@@ -125,7 +139,7 @@ function App() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-stone-100 px-6 py-8">
+    <main className="min-h-screen bg-[#f7f0df] px-6 py-8 text-[#292722]">
       <div className="mx-auto max-w-5xl">
 
         <Navbar onAddQuote={handleAddQuote} />
@@ -184,6 +198,7 @@ function App() {
                   setEditingQuote(null)
                   setShowForm(false)
                 }}
+                suggestedTags={suggestedTags}
               />
             </div>
           </div>

@@ -1,9 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import ShareButton from './ShareButton'
 
 function ReadingQuote({ quote, onEdit }) {
+  const quoteStyle = {
+    color: quote.fontColor || '#292722',
+    ...(quote.authorBackground && {
+      backgroundImage: `linear-gradient(135deg, rgba(245,245,244,.94), rgba(245,245,244,.78)), url("${quote.authorBackground}")`,
+      backgroundPosition: 'center',
+      backgroundSize: 'cover',
+    }),
+  }
+
   return (
-    <article className="flex min-h-screen snap-start items-center px-8 py-16">
+    <article
+      className="flex min-h-screen snap-start items-center px-8 py-16"
+      style={quoteStyle}
+    >
       <div className="mx-auto w-full max-w-4xl">
 
         <p className="font-serif text-3xl leading-relaxed md:text-5xl">
@@ -22,10 +35,10 @@ function ReadingQuote({ quote, onEdit }) {
                 ` · ${quote.bookNumber}`}
               {quote.part &&
                 ` · ${quote.part}`}
-              {quote.section &&
-                ` · ${quote.section}`}
               {quote.chapter &&
-                ` · ${quote.chapter}`}
+                ` · Chapter ${quote.chapter}`}
+              {quote.section &&
+                ` · Section ${quote.section}`}
               {quote.page &&
                 ` · p. ${quote.page}`}
             </p>
@@ -51,6 +64,10 @@ function ReadingQuote({ quote, onEdit }) {
           >
             Edit
           </button>
+
+          <span className="ml-4">
+            <ShareButton quote={quote} />
+          </span>
         </div>
 
       </div>
@@ -211,7 +228,7 @@ function ReadingView({
     virtualizer.getVirtualItems()
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-100">
+    <div className="fixed inset-0 z-50 bg-[#f7f0df]">
 
       {/* Back button */}
       <button

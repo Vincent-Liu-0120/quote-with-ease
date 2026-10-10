@@ -14,6 +14,16 @@ const quoteSchema = new mongoose.Schema(
       trim: true,
     },
 
+    authorBackground: {
+      type: String,
+      trim: true,
+    },
+
+    fontColor: {
+      type: String,
+      trim: true,
+    },
+
     book: {
       type: String,
       trim: true,
