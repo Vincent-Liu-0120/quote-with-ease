@@ -1,8 +1,8 @@
 # Quote with Ease
 
-Quote with Ease is a web-based personal quote collection. It stores quotes,
-book references, tags, author images, and display preferences in a MongoDB
-database, with a React/Vite frontend and an Express API.
+Quote with Ease is a web-based personal quote collection. It can run without a
+server by storing quotes in the current browser, or use MongoDB through an
+Express API when permanent, cross-device storage is configured.
 
 ## Features
 
@@ -14,6 +14,7 @@ database, with a React/Vite frontend and an Express API.
 - Customize quote font color.
 - Read quotes in a full-screen reading view.
 - Save a quote as a vertical image or share it through the browser share sheet.
+- Use the GitHub Pages frontend without configuring a database.
 
 ## Project structure
 
@@ -41,7 +42,25 @@ cd ../frontend
 npm install
 ```
 
-### 2. Start MongoDB
+### Browser-only mode
+
+Start only the frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Without `VITE_API_URL`, quotes are stored in this browser's local storage. They
+remain after refreshes, but are not shared across devices and may be removed if
+browser site data is cleared.
+
+### API and database mode
+
+Use this mode for permanent, cross-device storage.
+
+#### 2. Start MongoDB
 
 The easiest local option is Docker:
 
@@ -49,10 +68,7 @@ The easiest local option is Docker:
 docker compose up -d mongodb
 ```
 
-If Docker is not running, the backend cannot start and the frontend will show:
-`Cannot connect to the quote server. Start the backend and try again.`
-
-### 3. Configure the backend
+#### 3. Configure the backend
 
 Create `backend/.env`:
 
@@ -61,7 +77,7 @@ MONGODB_URI=mongodb://127.0.0.1:27017/quote-with-ease
 PORT=3000
 ```
 
-### 4. Start the API
+#### 4. Start the API
 
 ```bash
 cd backend
@@ -76,7 +92,7 @@ Check it with:
 curl http://localhost:3000/api/health
 ```
 
-### 5. Start the frontend
+#### 5. Connect the frontend
 
 In a second terminal:
 
@@ -88,8 +104,7 @@ npm run dev
 Open the URL printed by Vite, normally
 <http://localhost:5173/>.
 
-The frontend defaults to `http://localhost:3000` for the API. To use another
-API URL, create `frontend/.env.local`:
+To connect the frontend to the API, create `frontend/.env.local`:
 
 ```env
 VITE_API_URL=http://localhost:3000
@@ -121,9 +136,9 @@ The frontend and backend are separate applications:
 - Configure CORS on the backend for the deployed frontend origin if the host
   requires a restricted origin.
 
-GitHub stores the source code; it does not automatically run the Express API
-or provide MongoDB storage. A live website requires hosting for the frontend,
-backend, and database.
+The repository automatically publishes the frontend to GitHub Pages. It uses
+browser local storage until a `VITE_API_URL` is configured at build time.
+GitHub Pages does not run the Express API or provide MongoDB storage.
 
 ## Useful commands
 
